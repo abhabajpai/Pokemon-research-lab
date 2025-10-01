@@ -30,7 +30,7 @@ High-performance web app to aggregate, analyze, edit, and export a full Pokédex
   - Exports current view using dynamic columns
 
 ## Getting Started
-1. Open the app (v0 preview) and:
+1. Open the app and:
    - Use “Fetch Full Pokedex Dataset” to aggregate via PokeAPI, or
    - Upload a CSV in the “CSV Upload” tab and map headers, then import.
 2. Edit cells inline, add new columns via “Add Column,” or use the AI Editor overlay to apply bulk changes.
@@ -46,4 +46,3 @@ High-performance web app to aggregate, analyze, edit, and export a full Pokédex
 ## Notes
 - API: https://pokeapi.co/
 - Accessibility: Inputs have aria-labels; images include alt text; semantic sections used.
-- Deploy: Use the “Publish” button in v0 to deploy to Vercel. For installing locally, prefer the shadcn CLI or GitHub export from the v0 UI.
