@@ -54,6 +54,8 @@ export function UploadCSV() {
     specialDefense: "",
     speed: "",
   })
+  const [importing, setImporting] = useState(false)
+  const [rowsProcessed, setRowsProcessed] = useState(0)
   const upsertMany = usePokedexStore((s) => s.upsertMany)
   const ensureColumnsForCsv = usePokedexStore((s) => s.ensureColumnsForCsv)
 
@@ -72,13 +74,16 @@ export function UploadCSV() {
   }
 
   function setMap(field: AppField, value: string) {
-    setMapping((m) => ({ ...m, [field]: value }))
+    // Treat empty string as "Ignore"
+    setMapping((m) => ({ ...m, [field]: value || "" }))
   }
 
   async function startImport() {
     if (!file) return
-    // Basic: ensure required columns exist
     ensureColumnsForCsv()
+
+    setImporting(true)
+    setRowsProcessed(0)
 
     await new Promise<void>((resolve, reject) => {
       Papa.parse(file, {
@@ -86,13 +91,13 @@ export function UploadCSV() {
         worker: true,
         skipEmptyLines: true,
         delimiter: delimiter || ",",
-        chunkSize: 1024 * 1024, // stream in chunks
+        chunkSize: 1024 * 1024,
         step: (results) => {
           const rowObj = results.data as Record<string, string>
           const r: Partial<PokemonRow> = {}
           for (const opt of FIELD_OPTIONS) {
             const srcKey = mapping[opt.key]
-            if (!srcKey) continue
+            if (!srcKey) continue // explicitly ignore
             const raw = rowObj[srcKey]
             if (raw == null) continue
             if (opt.type === "number") {
@@ -110,9 +115,16 @@ export function UploadCSV() {
           }
           if (typeof r.id !== "number") return
           upsertMany([r as PokemonRow])
+          setRowsProcessed((n) => n + 1)
         },
-        complete: () => resolve(),
-        error: (err) => reject(err),
+        complete: () => {
+          setImporting(false)
+          resolve()
+        },
+        error: (err) => {
+          setImporting(false)
+          reject(err)
+        },
       })
     })
   }
@@ -136,7 +148,6 @@ export function UploadCSV() {
           <CardHeader>
             <CardTitle>Schema Mapping</CardTitle>
           </CardHeader>
-          {/* already responsive with md:grid-cols-2 */}
           <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {FIELD_OPTIONS.map((f) => (
               <div key={f.key} className="grid gap-1.5">
@@ -146,12 +157,12 @@ export function UploadCSV() {
                     <SelectValue placeholder="Select CSV column" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="ignore">{"(Ignore)"}</SelectItem>
                     {headers.map((h) => (
                       <SelectItem key={h} value={h}>
                         {h}
                       </SelectItem>
                     ))}
-                    <SelectItem value="ignore">(Ignore)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -161,8 +172,8 @@ export function UploadCSV() {
       )}
 
       <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-        <Button className="w-full sm:w-auto" onClick={startImport} disabled={!file}>
-          Import CSV (Streaming)
+        <Button className="w-full sm:w-auto" onClick={startImport} disabled={!file || importing}>
+          {importing ? `Importing... (${rowsProcessed} rows)` : "Import CSV (Streaming)"}
         </Button>
       </div>
     </div>

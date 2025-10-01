@@ -134,9 +134,11 @@ export function PokemonTable() {
           <Button
             size="sm"
             onClick={(e) => {
+              e.preventDefault()
               e.stopPropagation()
               addColumn("custom", "text")
             }}
+            aria-label="Add column"
           >
             + Add
           </Button>
@@ -160,6 +162,8 @@ export function PokemonTable() {
   })
 
   const parentRef = React.useRef<HTMLDivElement>(null)
+  const hScrollRef = React.useRef<HTMLDivElement>(null)
+
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
     getScrollElement: () => parentRef.current,
@@ -174,7 +178,7 @@ export function PokemonTable() {
   const lastColId = "__actions__"
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="rounded-md border overflow-x-auto" ref={hScrollRef}>
       <div ref={parentRef} className="h-[70vh] overflow-y-auto">
         <table className="min-w-full w-full border-collapse table-auto">
           <thead className="sticky top-0 z-20 bg-background">
@@ -198,7 +202,7 @@ export function PokemonTable() {
                         isLast &&
                           "sticky right-0 z-20 bg-background text-right w-[88px] min-w-[88px] border-r border-border",
                       )}
-                      onClick={h.column.getToggleSortingHandler()}
+                      onClick={h.column.getCanSort() ? h.column.getToggleSortingHandler() : undefined}
                       title={
                         typeof h.column.columnDef.header === "string"
                           ? (h.column.columnDef.header as string)
